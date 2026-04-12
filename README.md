@@ -6,7 +6,7 @@ Claude Code skill for Rbatis - Rust high-performance ORM framework.
 
 ```bash
 # 在 Claude Code 中安装
-git clone https://github.com/rbatis/rbatis-skill.git ~/.claude/skills/rbatis-skill
+git clone https://github.com/rbatis/rbatis-skill.git .claude/skills/rbatis-skill
 ```
 
 ## Usage
