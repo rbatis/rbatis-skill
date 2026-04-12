@@ -4,8 +4,8 @@ Claude Code skill for Rbatis - Rust high-performance ORM framework.
 
 ## Installation
 
+* Claude Code.  Execute the command in the command line of your project's root directory
 ```bash
-# 在 Claude Code 中安装
 git clone https://github.com/rbatis/rbatis-skill.git .claude/skills/rbatis-skill
 ```
 
