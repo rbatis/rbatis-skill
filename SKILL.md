@@ -371,11 +371,61 @@ htmlsql!(select_by_condition(
 <include refid="file://../rbatis/example/example.html?refid=a"></include>
 ```
 
+### Expression Syntax - All `${}`, `#{}`, and `test=""` Use Rust
+
+**Core principle:** Every expression inside `${}`, `#{}`, or `test=""` is parsed as **Rust code** via `syn::parse_str::<Expr>` in `func.rs`. This is not MyBatis XML syntax.
+
+**Translation flow (from `func.rs`):**
+```
+string → syn::parse_str::<Expr> → translate() → Rust code
+```
+
+**Key operator mappings in `translate()` (`func.rs:36-215`):**
+
+| Rust Operator | MyBatis XML (DO NOT USE) | Notes |
+|--------------|--------------------------|-------|
+| `&&` | `and` | Binary operator |
+| `\|\|` | `or` | Binary operator |
+| `!` | `not` | Unary operator |
+| `null` | `null` | Becomes `rbs::Value::Null` |
+| `==`, `!=`, `<`, `<=`, `>`, `>=` | same | Direct comparison |
+| `+`, `-`, `*`, `/`, `%` | same | Arithmetic |
+
+**Examples from `func.rs`:**
+
+```rust
+// Line 58-73: && becomes bool::op_from() wrapper
+BinOp::And(_) => {
+    b.left = Box::new(syn::parse_str::<Expr>(&format!(
+        "bool::op_from({})", b.left.to_token_stream()
+    )));
+    // ... same for right
+}
+
+// Line 74-88: || becomes bool::op_from() wrapper
+BinOp::Or(_) => {
+    // ... same pattern
+}
+
+// Line 11-14: null becomes rbs::Value::Null
+Expr::Path(b) => {
+    if token == "null" {
+        return syn::parse_str::<Expr>("rbs::Value::Null")...
+    }
+}
+```
+
+**What NOT to write (will cause parse error):**
+- `test="name != null and name != ''"` → use `&&`
+- `test="a or b"` → use `||`
+- `${name + '_tag'}` in XML → same in html_sql (already Rust)
+
+**What TO write (Rust syntax):**
+- `test="name != null && name != ''"`
+- `test="a || b"`
+- `${name + "_tag"}`
+
 ---
-
-## 5. py_sql
-
-`py_sql` is a Python-like dynamic SQL syntax.
 
 ### Basic Syntax
 
