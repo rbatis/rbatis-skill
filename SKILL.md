@@ -308,25 +308,16 @@ htmlsql!(select_by_condition(
 </mapper>
 ```
 
-### html_sql Common Usage
+### html_sql Expr
 
-**String concatenation (for LIKE patterns):**
-```html
-` and title like #{'%'+title+'%'}`
-` and name like #{'%'+name+'%'}`
-```
+**Three placeholder types:**
+- `#{expr}` — evaluates Rust expression, result bound as prepared statement parameter (safe from injection)
+- `${expr}` — evaluates Rust expression, result interpolated directly into SQL string
+- `test="expr"` — conditional expression in `<if>` tags, expression must use Rust operators (`&&`, `||`, `!`)
 
-**Date range query:**
-```html
-` and create_date >= #{start_date}`
-` and create_date <= #{end_date}`
-```
+**Note:** In html_sql, comparison operators like `<=` and `>=` can be written directly without XML escaping.
 
-**No escaping needed in HTML:** Comparison operators like `<=` and `>=` can be written directly without XML escaping.
-
-### html_sql Syntax
-
-| Syntax | Generated Rust Code |
+| Expr | Generated Rust Code |
 |--------|---------------------|
 | `` <trim prefixOverrides=" and">` and name != '' `</trim> `` | `sql.trim(" and")` |
 | `` <if test="key == 'id'">`select * from table`</if> `` | `if key == "id"{sql.push_str("select * from table");}` |
@@ -337,6 +328,8 @@ htmlsql!(select_by_condition(
 | `` <set collection="arg"> `` | `sql.trim("set ").push_str(" set name=?,age=? ");` |
 | `` <choose> `` | `match {}` |
 | `` <when test="true"> `` | `match true{ true=>{} _ => {} }` |
+| `` <if test="a && b">`sql`</if> `` | `if a && b { sql.push_str("sql"); }` |
+| `` <if test="a \|\| b">`sql`</if> `` | `if a \|\| b { sql.push_str("sql"); }` |
 | `` <otherwise> `` | `match { _ =>{} }` |
 | `` <where> `` | `sql.push_str("WHERE").trim("WHERE");` |
 | `` <bind name="a" value="1+1"></bind> `` | `let a = rbs::Value::I32(1 + 1);` |
@@ -349,8 +342,9 @@ htmlsql!(select_by_condition(
 | `` `#{name + '_tag'}` `` | `sql.push_str("?");args.push(rbs::Value::from(format!("{}",name + "_tag")));` |
 | `` `${age + 1}` `` | `sql.push_str(&format!("{}", age + 1));` |
 | `` `#{age + 1}` `` | `sql.push_str("?");args.push(rbs::Value::from(age+1));` |
-| `` `${true & true}` `` | `sql.push_str(&format!("{}", true & true));` |
-| `` `#{true & true}` `` | `sql.push_str("?");args.push(rbs::Value::from(true & true));` |
+| `` `${true && true}` `` | `sql.push_str(&format!("{}", true && true));` |
+| `` `#{true && true}` `` | `sql.push_str("?");args.push(rbs::Value::from(true && true));` |
+| `` `${true \|\| false}` `` | `sql.push_str(&format!("{}", true || false));` |
 | `` `${2 > 1}` `` | `sql.push_str(&format!("{}",2 > 1));` |
 | `` `${2 / 1}` `` | `sql.push_str(&format!("{}", 2 / 1));` |
 | `` `${2 == 1}` `` | `sql.push_str(&format!("{}", 2 == 1));` |
@@ -373,7 +367,7 @@ htmlsql!(select_by_condition(
 <include refid="file://../rbatis/example/example.html?refid=a"></include>
 ```
 
-### Expression Syntax - All `${}`, `#{}`, and `test=""` Use Rust
+### Expression Syntax
 
 **Core principle:** Every expression inside `${}`, `#{}`, or `test=""` is parsed as **Rust code** via `syn::parse_str::<Expr>` in `func.rs`. This is not MyBatis XML syntax.
 
@@ -459,39 +453,22 @@ impl User {
         if name != '':
             ` and name=#{name}`" );
 }
-```
 
-### py_sql Common Usage
+### py_sql Expr
 
-**String concatenation (for LIKE patterns):**
-```python
-` and title like #{'%'+title+'%'}`
-` and name like #{'%'+name+'%'}`
-```
+**Three placeholder types:**
+- `#{expr}` — evaluates Rust expression, result bound as prepared statement parameter (safe from injection)
+- `${expr}` — evaluates Rust expression, result interpolated directly into SQL string
+- `test="expr"` — conditional expression in `if` tags, expression must use Rust operators (`&&`, `||`, `!`)
 
-**Date range query:**
-```python
-` and create_date >= #{start_date}`
-` and create_date <= #{end_date}`
-```
-
-**Collection to SQL list (.sql() method):**
-```python
-`select * from activity where delete_flag = 0`
-if !ids.is_empty():
-    ` and id in `
-    ${ids.sql()}
-```
-Result: `select * from activity where delete_flag = 0 and id in (1, 2, 3)`
-
-### py_sql Syntax
-
-| Syntax | Generated Rust Code |
+| Expr | Generated Rust Code |
 |--------|---------------------|
 | `` trim 'AND ': `` | `sql.trim_end_matches("AND ").trim_start_matches("AND ")` |
 | `` trim start='AND ': `` | `sql.trim_start_matches("AND ")` |
 | `` trim end='AND ': `` | `sql.trim_end_matches("AND ")` |
 | `` if arg!=1: `` | `if arg !=1 {}` |
+| `` if true && true: `` | `if true && true {}` |
+| `` if true || true: `` | `if true && true {}` |
 | `` if true:` ``<br/>`` `select * from table` `` | `if true { sql.push_str("select * from table");}` |
 | `` for key,item in arg: `` | `for (key,item) in arg{ }` |
 | `` for key,item in arg:` ``<br/>`` `and name = ${name}` `` | `for (key,item) in arg{ sql.push_str(&format!("and name = {}",name)); }` |
@@ -513,8 +490,9 @@ Result: `select * from activity where delete_flag = 0 and id in (1, 2, 3)`
 | `` `#{name + '_tag'}` `` | `sql.push_str("?");args.push(rbs::Value::from(format!("{}",name + "_tag")));` |
 | `` `${age + 1}` `` | `sql.push_str(&format!("{}", age + 1));` |
 | `` `#{age + 1}` `` | `sql.push_str("?");args.push(rbs::Value::from(age+1));` |
-| `` `${true & true}` `` | `sql.push_str(&format!("{}", true & true));` |
-| `` `#{true & true}` `` | `sql.push_str("?");args.push(rbs::Value::from(true & true));` |
+| `` `${true && true}` `` | `sql.push_str(&format!("{}", true && true));` |
+| `` `#{true && true}` `` | `sql.push_str("?");args.push(rbs::Value::from(true && true));` |
+| `` `${true \|\| false}` `` | `sql.push_str(&format!("{}", true || false));` |
 | `` `${2 > 1}` `` | `sql.push_str(&format!("{}",2 > 1));` |
 | `` `${2 / 1}` `` | `sql.push_str(&format!("{}", 2 / 1));` |
 | `` `${2 == 1}` `` | `sql.push_str(&format!("{}", 2 == 1));` |
