@@ -324,7 +324,7 @@ htmlsql!(select_by_condition(
 
 **No escaping needed in HTML:** Comparison operators like `<=` and `>=` can be written directly without XML escaping.
 
-### html_sql Syntax Tree
+### html_sql Syntax
 
 | Syntax | Generated Rust Code |
 |--------|---------------------|
@@ -357,6 +357,8 @@ htmlsql!(select_by_condition(
 | `` `${!false}` `` | `sql.push_str(&format!("{}", !false));` |
 | `` `${2 % 1}` `` | `sql.push_str(&format!("{}", 2 % 1));` |
 | `` `${2 - 1}` `` | `sql.push_str(&format!("{}", 2 - 1));` |
+| `` `${2 << 1}` `` | `sql.push_str(&format!("{}", 2 << 1));` |
+| `` `${8 >> 2}` `` | `sql.push_str(&format!("{}", 8 >> 2));` |
 
 ### include - SQL Fragment Reuse
 
@@ -482,7 +484,7 @@ if !ids.is_empty():
 ```
 Result: `select * from activity where delete_flag = 0 and id in (1, 2, 3)`
 
-### py_sql Syntax Tree
+### py_sql Syntax
 
 | Syntax | Generated Rust Code |
 |--------|---------------------|
@@ -519,6 +521,8 @@ Result: `select * from activity where delete_flag = 0 and id in (1, 2, 3)`
 | `` `${!false}` `` | `sql.push_str(&format!("{}", !false));` |
 | `` `${2 % 1}` `` | `sql.push_str(&format!("{}", 2 % 1));` |
 | `` `${2 - 1}` `` | `sql.push_str(&format!("{}", 2 - 1));` |
+| `` `${2 << 1}` `` | `sql.push_str(&format!("{}", 2 << 1));` |
+| `` `${8 >> 2}` `` | `sql.push_str(&format!("{}", 8 >> 2));` |
 
 ---
 
