@@ -38,7 +38,7 @@ description: Rust high-performance ORM framework - compile-time dynamic SQL, MyB
 ```toml
 # Cargo.toml
 [dependencies]
-rbatis = { version = "4.8"}
+rbatis = { version = "4"}
 rbs = { version = "4"}
 rbdc-sqlite = { version = "4" }
 # rbdc-mysql = { version = "4" }
