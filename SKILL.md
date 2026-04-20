@@ -121,7 +121,7 @@ let dt = DateTime::from_timestamp(1234567890);
 let dt = DateTime::from_timestamp_millis(1234567890000);
 
 // Parse from string (RFC3339 or similar)
-let dt = DateTime::from_str("2024-04-19T09:59:39+08:00").unwrap();
+let dt = DateTime::from_str("2024-04-19T09:59:39+08:00")?;
 
 // Format output
 let s = dt.format("YYYY-MM-DD hh:mm:ss");
@@ -181,7 +181,7 @@ Format: `2024-12-12`
 use rbdc::types::date::Date;
 
 // Parse from string
-let d = Date::from_str("2024-12-12").unwrap();
+let d = Date::from_str("2024-12-12")?;
 
 // From DateTime
 let d: Date = dt.into();
@@ -202,7 +202,7 @@ Format: `00:00:00.000000`
 use rbdc::types::time::Time;
 
 // Parse from string
-let t = Time::from_str("12:30:45.123456").unwrap();
+let t = Time::from_str("12:30:45.123456")?;
 
 // From DateTime
 let t: Time = dt.into();
@@ -243,11 +243,11 @@ High-precision decimal for financial data.
 use rbdc::types::decimal::Decimal;
 
 // Parse from string
-let d = Decimal::from_str("123.456").unwrap();
+let d = Decimal::from_str("123.456")?;
 
 // From numeric types
 let d = Decimal::from(123);
-let d = Decimal::from_f64(1.5).unwrap();
+let d = Decimal::from_f64(1.5)?;
 
 // Arithmetic
 let sum = d1 + d2;
@@ -274,7 +274,7 @@ use serde_json::Value;
 let j = Json::from(serde_json::json!({"a": "b"}));
 
 // From string
-let j = Json::from_str(r#"{"a":"b"}"#).unwrap();
+let j = Json::from_str(r#"{"a":"b"}"#)?;
 
 // To serde_json::Value
 let v: serde_json::Value = j.into();
@@ -312,7 +312,7 @@ let u = Uuid::new();
 let u = Uuid::default();
 
 // Parse from string
-let u = Uuid::from_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+let u = Uuid::from_str("550e8400-e29b-41d4-a716-446655440000")?;
 ```
 
 ---
