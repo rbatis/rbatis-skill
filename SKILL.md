@@ -101,12 +101,12 @@ rb.link(MssqlDriver {}, "jdbc:sqlserver://localhost:1433;User=SA;Password=TestPa
 
 ## 3. rbdc types
 
-All types are in `rbdc::types::*`, used to map database columns to Rust values.
+These types are re-exported by `rbatis::rbdc::*` (or `rbdc::types::*` directly) and map database column types to Rust values. They implement `serde` serialization/deserialization for database I/O and `rbs::Value` conversion.
 
 ### DateTime
 
 ```rust
-use rbdc::types::datetime::DateTime;
+use rbatis::rbdc::datetime::DateTime;
 
 // Now
 let dt = DateTime::now();
@@ -149,8 +149,8 @@ dt.micro();   // u32
 dt.nano();    // u32
 dt.unix_timestamp();           // i64 (seconds)
 dt.unix_timestamp_millis();    // i64
-dt.unix_timestamp_micros();     // i64
-dt.unix_timestamp_nano();       // i128
+dt.unix_timestamp_micros();   // i64
+dt.unix_timestamp_nano();     // i128
 ```
 
 **Conversions:**
@@ -178,7 +178,7 @@ let t: Time = dt.into();
 Format: `2024-12-12`
 
 ```rust
-use rbdc::types::date::Date;
+use rbatis::rbdc::date::Date;
 
 // Parse from string
 let d = Date::from_str("2024-12-12")?;
@@ -199,7 +199,7 @@ d.year();  // i32
 Format: `00:00:00.000000`
 
 ```rust
-use rbdc::types::time::Time;
+use rbatis::rbdc::time::Time;
 
 // Parse from string
 let t = Time::from_str("12:30:45.123456")?;
@@ -221,7 +221,7 @@ t.nano();   // u32
 Milliseconds since Unix epoch.
 
 ```rust
-use rbdc::types::timestamp::Timestamp;
+use rbatis::rbdc::timestamp::Timestamp;
 
 // UTC now
 let ts = Timestamp::utc();
@@ -240,7 +240,7 @@ let dt: DateTime = ts.into();
 High-precision decimal for financial data.
 
 ```rust
-use rbdc::types::decimal::Decimal;
+use rbatis::rbdc::decimal::Decimal;
 
 // Parse from string
 let d = Decimal::from_str("123.456")?;
@@ -257,7 +257,7 @@ let quotient = d1 / d2;
 
 // Scale and precision
 let scaled = d.with_scale(2);   // round to 2 decimal places
-let precise = d.with_prec(10);   // set precision to 10 digits
+let precise = d.with_prec(10);  // set precision to 10 digits
 ```
 
 ---
@@ -267,7 +267,7 @@ let precise = d.with_prec(10);   // set precision to 10 digits
 JSON string wrapper for flexible schema columns.
 
 ```rust
-use rbdc::types::json::Json;
+use rbatis::rbdc::json::Json;
 use serde_json::Value;
 
 // From serde_json::Value
@@ -285,7 +285,7 @@ println!("{}", j.0);
 
 **JsonV<T>: typed JSON wrapper:**
 ```rust
-use rbdc::types::json::JsonV;
+use rbatis::rbdc::json::JsonV;
 
 #[derive(Serialize, Deserialize)]
 struct Account {
@@ -303,7 +303,7 @@ let account: JsonV<Account> = JsonV(Account { id: "1".into(), name: "test".into(
 Format: `00000000-0000-0000-0000-000000000000`
 
 ```rust
-use rbdc::types::uuid::Uuid;
+use rbatis::rbdc::uuid::Uuid;
 
 // Generate v4 UUID
 let u = Uuid::new();
@@ -322,7 +322,7 @@ let u = Uuid::from_str("550e8400-e29b-41d4-a716-446655440000")?;
 Binary data for blob columns.
 
 ```rust
-use rbdc::types::bytes::Bytes;
+use rbatis::rbdc::bytes::Bytes;
 
 // From Vec<u8>
 let b = Bytes::from(vec![1, 2, 3]);
@@ -334,7 +334,7 @@ let v: Vec<u8> = b.into_inner();
 let slice: &[u8] = b.as_ref();
 
 // BytesSize constants
-use rbdc::types::bytes::{KB, MB, GB};
+use rbatis::rbdc::bytes::{KB, MB, GB};
 println!("{}", KB);  // "1.00KB"
 ```
 
