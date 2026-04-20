@@ -20,9 +20,9 @@ description: Rust high-performance ORM framework - compile-time dynamic SQL, MyB
 
 1. [Dependencies](#1-dependencies)
 2. [Initialization](#2-initialization)
-3. [crud! Macro](#3-crud-macro)
-4. [html_sql](#4-html_sql)
-5. [py_sql](#5-py_sql)
+3. [rbdc types](#3-rbdc-types)
+4. [crud! Macro](#4-crud-macro)
+5. [html_sql](#5-html_sql)
 6. [Raw SQL](#6-raw-sql)
 7. [Transaction](#7-transaction)
 8. [Pagination](#8-pagination)
@@ -99,7 +99,248 @@ rb.link(MssqlDriver {}, "jdbc:sqlserver://localhost:1433;User=SA;Password=TestPa
 
 ---
 
-## 3. crud! Macro
+## 3. rbdc types
+
+All types are in `rbdc::types::*`, used to map database columns to Rust values.
+
+### DateTime
+
+```rust
+use rbdc::types::datetime::DateTime;
+
+// Now
+let dt = DateTime::now();
+
+// UTC
+let utc = DateTime::utc();
+
+// From timestamp (seconds)
+let dt = DateTime::from_timestamp(1234567890);
+
+// From timestamp (milliseconds)
+let dt = DateTime::from_timestamp_millis(1234567890000);
+
+// Parse from string (RFC3339 or similar)
+let dt = DateTime::from_str("2024-04-19T09:59:39+08:00").unwrap();
+
+// Format output
+let s = dt.format("YYYY-MM-DD hh:mm:ss");
+```
+
+**DateTime arithmetic:**
+```rust
+use std::time::Duration;
+
+let later = dt.add(Duration::from_secs(3600));
+let earlier = dt.sub(Duration::from_secs(3600));
+let diff: Duration = dt1 - dt2;
+```
+
+**DateTime fields:**
+```rust
+dt.year();    // i32
+dt.mon();     // u8
+dt.day();     // u8
+dt.hour();    // u8
+dt.minute();  // u8
+dt.sec();     // u8
+dt.ms();      // u16
+dt.micro();   // u32
+dt.nano();    // u32
+dt.unix_timestamp();           // i64 (seconds)
+dt.unix_timestamp_millis();    // i64
+dt.unix_timestamp_micros();     // i64
+dt.unix_timestamp_nano();       // i128
+```
+
+**Conversions:**
+```rust
+// DateTime -> fastdate::DateTime
+let fd: fastdate::DateTime = dt.into();
+
+// DateTime -> SystemTime
+let st: SystemTime = dt.into();
+
+// DateTime -> Timestamp
+let ts = Timestamp::from(dt);
+
+// DateTime -> Date
+let d: Date = dt.into();
+
+// DateTime -> Time
+let t: Time = dt.into();
+```
+
+---
+
+### Date
+
+Format: `2024-12-12`
+
+```rust
+use rbdc::types::date::Date;
+
+// Parse from string
+let d = Date::from_str("2024-12-12").unwrap();
+
+// From DateTime
+let d: Date = dt.into();
+
+// Access fields
+d.day();   // u8
+d.mon();   // u8
+d.year();  // i32
+```
+
+---
+
+### Time
+
+Format: `00:00:00.000000`
+
+```rust
+use rbdc::types::time::Time;
+
+// Parse from string
+let t = Time::from_str("12:30:45.123456").unwrap();
+
+// From DateTime
+let t: Time = dt.into();
+
+// Access fields
+t.hour();   // u8
+t.minute(); // u8
+t.sec();    // u8
+t.nano();   // u32
+```
+
+---
+
+### Timestamp
+
+Milliseconds since Unix epoch.
+
+```rust
+use rbdc::types::timestamp::Timestamp;
+
+// UTC now
+let ts = Timestamp::utc();
+
+// From DateTime
+let ts = Timestamp::from(dt);
+
+// To DateTime
+let dt: DateTime = ts.into();
+```
+
+---
+
+### Decimal
+
+High-precision decimal for financial data.
+
+```rust
+use rbdc::types::decimal::Decimal;
+
+// Parse from string
+let d = Decimal::from_str("123.456").unwrap();
+
+// From numeric types
+let d = Decimal::from(123);
+let d = Decimal::from_f64(1.5).unwrap();
+
+// Arithmetic
+let sum = d1 + d2;
+let diff = d1 - d2;
+let product = d1 * d2;
+let quotient = d1 / d2;
+
+// Scale and precision
+let scaled = d.with_scale(2);   // round to 2 decimal places
+let precise = d.with_prec(10);   // set precision to 10 digits
+```
+
+---
+
+### Json
+
+JSON string wrapper for flexible schema columns.
+
+```rust
+use rbdc::types::json::Json;
+use serde_json::Value;
+
+// From serde_json::Value
+let j = Json::from(serde_json::json!({"a": "b"}));
+
+// From string
+let j = Json::from_str(r#"{"a":"b"}"#).unwrap();
+
+// To serde_json::Value
+let v: serde_json::Value = j.into();
+
+// Raw string access
+println!("{}", j.0);
+```
+
+**JsonV<T>: typed JSON wrapper:**
+```rust
+use rbdc::types::json::JsonV;
+
+#[derive(Serialize, Deserialize)]
+struct Account {
+    id: String,
+    name: String,
+}
+
+let account: JsonV<Account> = JsonV(Account { id: "1".into(), name: "test".into() });
+```
+
+---
+
+### Uuid
+
+Format: `00000000-0000-0000-0000-000000000000`
+
+```rust
+use rbdc::types::uuid::Uuid;
+
+// Generate v4 UUID
+let u = Uuid::new();
+
+// Default (empty UUID)
+let u = Uuid::default();
+
+// Parse from string
+let u = Uuid::from_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+```
+
+---
+
+### Bytes
+
+Binary data for blob columns.
+
+```rust
+use rbdc::types::bytes::Bytes;
+
+// From Vec<u8>
+let b = Bytes::from(vec![1, 2, 3]);
+
+// Into Vec<u8>
+let v: Vec<u8> = b.into_inner();
+
+// As reference
+let slice: &[u8] = b.as_ref();
+
+// BytesSize constants
+use rbdc::types::bytes::{KB, MB, GB};
+println!("{}", KB);  // "1.00KB"
+```
+
+---
+
+## 4. crud! Macro
 
 The `crud!` macro generates: `insert`, `insert_batch`, `select_by_map`, `update_by_map`, `delete_by_map`
 
@@ -186,7 +427,7 @@ BizActivity::delete_by_map(&rb, value!{"id": &["1", "2", "3"]}).await?;
 
 ---
 
-## 4. html_sql
+## 5. html_sql
 
 `html_sql` is a MyBatis-like XML template syntax. SQL is compiled to Rust code at compile time.
 
