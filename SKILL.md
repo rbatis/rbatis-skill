@@ -877,19 +877,12 @@ page.records;    // data Vec<T>
 Auto-sync Rust struct to database table (creates table/add columns only, never modifies existing columns).
 
 ```rust
-use rbatis::table_sync;
 use rbatis::RBatis;
 
 #[tokio::main]
 pub async fn main() {
     let rb = RBatis::new();
     rb.init(SqliteDriver {}, "sqlite://target/sqlite.db").unwrap();
-
-    // Select mapper for your database
-    let mapper = &table_sync::SqliteTableMapper {};
-    // let mapper = &table_sync::PGTableMapper{};
-    // let mapper = &table_sync::MysqlTableMapper{};
-    // let mapper = &table_sync::MssqlTableMapper{};
 
     // Method 1: Using value! macro to define column types
     let table = value! {
@@ -900,12 +893,12 @@ pub async fn main() {
         "version": "TEXT",
         "delete_flag": "INT8"
     };
-    RBatis::sync(&rb.acquire().await.unwrap(), mapper, &table, "rb_user").await?;
+    RBatis::sync(&rb.acquire().await.unwrap(), &rb, &table, "rb_user").await?;
 
     // Method 2: Using struct directly
     RBatis::sync(
         &rb.acquire().await.unwrap(),
-        mapper,
+        &rb,
         &BizActivity {
             id: 0,
             name: Some("".to_string()),
