@@ -776,23 +776,16 @@ tx.commit().await?;
 tx.rollback().await?;
 ```
 
-### Auto Rollback (defer_async)
+### Auto Commit/Rollback (auto_commit)
+
+`auto_commit()` returns a `RBatisTxExecutorGuard` that automatically commits or rolls back when dropped. If `commit()` was called before drop, it auto-commits; otherwise it auto-rolls back.
 
 ```rust
-let tx = rb.acquire_begin().await?;
-
-// defer_async: rollback automatically if transaction is dropped without commit
-let tx = tx.defer_async(|tx| async move {
-    if tx.done() {
-        log::info!("transaction [{}] complete", tx.tx_id());
-    } else {
-        tx.rollback().await.unwrap();
-        log::info!("transaction [{}] rollback", tx.tx_id());
-    }
-});
-
+let tx = rb.acquire_begin().await?.auto_commit();// auto commit or rollback on drop
 BizActivity::insert(&tx, &table).await?;
-tx.commit().await?;  // after commit, tx.done() == true, no rollback
+
+// If not commit or rollback, auto rollback on drop
+// tx.commit().await?;
 ```
 
 ---
